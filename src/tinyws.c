@@ -132,7 +132,6 @@ int tinyws_settings_init(tinyws_settings* settings)
 
 size_t tinyws_execute(tinyws* parser, const tinyws_settings* settings, const char* data, size_t len)
 {
-    parser->ws_errno = WSE_OK;
     size_t nread = 0;
 
 #define CONSUME_BYTE() \
@@ -169,6 +168,8 @@ size_t tinyws_execute(tinyws* parser, const tinyws_settings* settings, const cha
 
     if (parser->state == s_dead)
         return 0;
+
+    parser->ws_errno = WSE_OK;
 
     if (len == 0) { // eof
         switch (parser->type) {

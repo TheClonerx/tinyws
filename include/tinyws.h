@@ -159,18 +159,18 @@ struct tinyws_settings {
     tinyws_cb on_frame; // a frame was received
     tinyws_data_cb on_payload; // payload data is being received
 
-    tinyws_cb on_close; // a CLOSE frame was received, if it wasnt requested, you must send a CLOSE
-    tinyws_cb on_ping; // a PING frame was received, you must answer with a PONG
+    tinyws_cb on_close; // a CLOSE frame was received, if it wasn't requested, you must send back a CLOSE frame
+    tinyws_cb on_ping; // a PING frame was received, you must send back a PONG frame
     tinyws_cb on_pong; // a PONG frame was received
 
-    tinyws_data_cb on_close_data; // close frame might include utf8 text
-    tinyws_data_cb on_ping_data; // ping frame might include binary data
-    tinyws_data_cb on_pong_data; // pong frame might include binary data
+    tinyws_data_cb on_close_data; // a CLOSE frame might include utf8 text
+    tinyws_data_cb on_ping_data; // a PING frame might include binary data
+    tinyws_data_cb on_pong_data; // a PONG frame might include binary data
 
     tinyws_data_cb on_text; // utf8 text is being received
-    tinyws_data_cb on_binary; // binary data might be received
+    tinyws_data_cb on_binary; // binary data is being received
 
-    tinyws_cb on_message_complete; // text or binary messaged ended, note that you might receive CLOSE, PING or PONG in between
+    tinyws_cb on_message_complete; // text or binary message ended, note that you might receive CLOSE, PING or PONG in between
 };
 
 /* Generates the hash required for the Sec-Websocket-Accept header */
@@ -179,19 +179,21 @@ struct tinyws_settings {
 /* returns zero on error */
 int tinyws_generate_accept_hash(char const* websocket_key, char* hash_out) TINYWS_NONNULL(1, 2);
 
-/* Initializes the tinyws context, one should be used per connection */
+/* Initializes the tinyws context, one context should be used per connection */
 /* returns non-zero on success */
 /* returns zero on error */
 int tinyws_init(tinyws* parser, enum tinyws_type type) TINYWS_NONNULL(1);
 
-/* Initializes the tinyws context settings, one must be used per tinyws context */
+/* Initializes the tinyws context settings, one must be used per context */
 /* returns non-zero on success */
 /* returns zero on error */
 int tinyws_settings_init(tinyws_settings* settings) TINYWS_NONNULL(1);
 
+/* To signify EOF, set `len` to 0 */
+/* Otherwhise, `data` must point to a buffer of at least `len` bytes */
 /* returns the amount of bytes consumed, it might be less than `len`, in which case, more data is needed */
 /* returns zero on error */
-size_t tinyws_execute(tinyws* parser, tinyws_settings const* settings, char const* data, size_t len) TINYWS_NONNULL(1, 2, 3);
+size_t tinyws_execute(tinyws* parser, tinyws_settings const* settings, char const* data, size_t len) TINYWS_NONNULL(1, 2);
 
 /* Returns a string name of the given error */
 char const* tinyws_errno_name(enum tinyws_errno err);

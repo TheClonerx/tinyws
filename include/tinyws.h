@@ -143,6 +143,7 @@ struct tinyws {
     /** READ ONLY **/
     unsigned long long payload_length; // at least 63 bits
     unsigned ws_errno;
+    int cb_errno;
 
     /** PUBLIC **/
     void* data;

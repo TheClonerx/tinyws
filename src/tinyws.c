@@ -173,6 +173,22 @@ size_t tinyws_execute(tinyws* parser, const tinyws_settings* settings, const cha
         return nread;              \
     } while (0)
 
+#define CALLBACK(name)                                          \
+    do {                                                        \
+        if (settings->on_##name) {                              \
+            if (parser->cb_errno = settings->on_##name(parser)) \
+                SET_ERRNO(WSE_CB_##name);                       \
+        }                                                       \
+    } while (0)
+
+#define CALLBACK_DATA(name, d, l)                                         \
+    do {                                                                  \
+        if (settings->on_##name) {                                        \
+            if (parser->cb_errno = settings->on_##name(parser, (d), (l))) \
+                SET_ERRNO(WSE_CB_##name);                                 \
+        }                                                                 \
+    } while (0)
+
     if (parser->state == s_dead)
         return 0;
 
@@ -348,18 +364,16 @@ size_t tinyws_execute(tinyws* parser, const tinyws_settings* settings, const cha
 
         case s_payload_data: {
 
-            if (parser->nread == 0 && settings->on_frame)
-                if (settings->on_frame(parser) != 0)
-                    SET_ERRNO(WSE_CB_frame);
+            if (parser->nread == 0)
+                CALLBACK(frame);
+
             if (parser->payload_length != 0) {
                 parser->state = s_initial;
             } else {
                 REQUIRES_BYTE();
                 unsigned long long const remaining_bytes = parser->payload_length - parser->nread;
                 unsigned long long const bytes_to_process = remaining_bytes < len ? remaining_bytes : len;
-                if (settings->on_payload)
-                    if (settings->on_payload(parser, data, bytes_to_process) != 0)
-                        SET_ERRNO(WSE_CB_payload);
+                CALLBACK_DATA(payload, data, bytes_to_process);
                 parser->nread += bytes_to_process;
                 if (parser->payload_length == parser->nread)
                     parser->state = s_initial;

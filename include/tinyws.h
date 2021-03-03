@@ -19,7 +19,6 @@ extern "C" {
 
 typedef struct tinyws tinyws;
 typedef struct tinyws_settings tinyws_settings;
-typedef struct tinyws_frame tinyws_frame;
 
 #define TINYWS_OPCODE_MAP(XX)      \
     /* frame-opcode-cont */        \
@@ -125,21 +124,6 @@ enum tinyws_type {
 
 typedef int (*tinyws_data_cb)(tinyws*, const char* at, size_t length);
 typedef int (*tinyws_cb)(tinyws*);
-
-struct tinyws_frame {
-    unsigned fin : 1;
-    unsigned rsv1 : 1;
-    unsigned rsv2 : 1;
-    unsigned rsv3 : 1;
-    unsigned opcode : 4;
-    unsigned mask : 1;
-    unsigned payload_len : 7;
-    union {
-        unsigned extended_short_payload_length : 16; // if payload_len == 126
-        unsigned long long extended_long_payload_length : 64; // if payload_len == 127
-    };
-    char masking_key[4];
-};
 
 struct tinyws {
     /** READ ONLY **/

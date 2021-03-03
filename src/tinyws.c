@@ -166,6 +166,13 @@ size_t tinyws_execute(tinyws* parser, const tinyws_settings* settings, const cha
         return nread;         \
     } while (0)
 
+#define SET_UNRECOVERABLE_ERRNO(n) \
+    do {                           \
+        parser->ws_errno = n;      \
+        parser->state = s_dead;    \
+        return nread;              \
+    } while (0)
+
     if (parser->state == s_dead)
         return 0;
 
@@ -198,12 +205,12 @@ size_t tinyws_execute(tinyws* parser, const tinyws_settings* settings, const cha
         case s_frame_payload_length: {
             REQUIRES_BYTE();
             unsigned char const byte = *data;
-            CONSUME_BYTE();
             parser->masked = byte & 0b10000000 ? 1 : 0;
             if (parser->type == WS_CLIENT && parser->masked)
                 SET_ERRNO(WSE_UNEXPECTED_MASK_BIT);
             else if (parser->type == WS_SERVER && !parser->masked)
                 SET_ERRNO(WSE_EXPECTED_MASK_BIT);
+            CONSUME_BYTE();
 
             unsigned const payload_len = byte & 0b01111111;
             if (payload_len == 126) {

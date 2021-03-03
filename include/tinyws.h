@@ -96,6 +96,15 @@ enum tinyws_status_code {
     /* Callback-related errors */                                            \
     XX(CB_frame, "the on_frame callback failed")                             \
     XX(CB_payload, "the on_payload callback failed")                         \
+    XX(CB_close, "the on_close callback failed")                             \
+    XX(CB_ping, "the on_ping callback failed")                               \
+    XX(CB_pong, "the on_pong callback failed")                               \
+    XX(CB_close_data, "the on_close_data callback failed")                   \
+    XX(CB_ping_data, "the on_ping_data callback failed")                     \
+    XX(CB_pong_data, "the on_ping_data callback failed")                     \
+    XX(CB_text, "the on_ping callback failed")                               \
+    XX(CB_binary, "the on_ping callback failed")                             \
+    XX(CB_message_complete, "the on_message_complete callback failed")       \
                                                                              \
     /* Parsing-related errors */                                             \
     XX(INVALID_EOF_STATE, "stream ended at an unexpected time")              \

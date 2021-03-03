@@ -89,17 +89,18 @@ enum tinyws_status_code {
 #undef XX
 };
 
-#define TINYWS_ERRNO_MAP(XX)                                    \
-    /* No error */                                              \
-    XX(OK, "success")                                           \
-                                                                \
-    /* Callback-related errors */                               \
-    XX(CB_frame, "the on_frame callback failed")                \
-    XX(CB_payload, "the on_payload callback failed")            \
-                                                                \
-    /* Parsing-related errors */                                \
-    XX(INVALID_EOF_STATE, "stream ended at an unexpected time") \
-    XX(UNEXPECTED_MASK_BIT, "client received a frame with the MASK bit set")
+#define TINYWS_ERRNO_MAP(XX)                                                 \
+    /* No error */                                                           \
+    XX(OK, "success")                                                        \
+                                                                             \
+    /* Callback-related errors */                                            \
+    XX(CB_frame, "the on_frame callback failed")                             \
+    XX(CB_payload, "the on_payload callback failed")                         \
+                                                                             \
+    /* Parsing-related errors */                                             \
+    XX(INVALID_EOF_STATE, "stream ended at an unexpected time")              \
+    XX(UNEXPECTED_MASK_BIT, "client received a frame with the MASK bit set") \
+    XX(EXPECTED_MASK_BIT, "server received a frame with the MASK bit unset")
 
 #define WS_ERRNO_GEN(n, s) WSE_##n,
 enum tinyws_errno {

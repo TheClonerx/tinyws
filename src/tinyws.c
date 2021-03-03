@@ -199,6 +199,11 @@ size_t tinyws_execute(tinyws* parser, const tinyws_settings* settings, const cha
             unsigned char const byte = *data;
             CONSUME_BYTE();
             parser->masked = byte & 0b10000000 ? 1 : 0;
+            if (parser->type == WS_CLIENT && parser->masked)
+                SET_ERRNO(WSE_UNEXPECTED_MASK_BIT);
+            else if (parser->type == WS_SERVER && !parser->masked)
+                SET_ERRNO(WSE_EXPECTED_MASK_BIT);
+
             unsigned const payload_len = byte & 0b01111111;
             if (payload_len == 126) {
                 parser->state = s_frame_payload_length_16_0;
@@ -309,8 +314,6 @@ size_t tinyws_execute(tinyws* parser, const tinyws_settings* settings, const cha
         } break;
 
         case s_frame_mask_0: {
-            if (parser->type == WS_CLIENT)
-                SET_ERRNO(WSE_UNEXPECTED_MASK_BIT);
             REQUIRES_BYTE();
             parser->mask[0] = *data;
             CONSUME_BYTE();

@@ -1,4 +1,4 @@
-#include <tinyws/tinyws.h>
+#include <tinyws.h>
 
 #include <openssl/evp.h>
 

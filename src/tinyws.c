@@ -189,6 +189,8 @@ size_t tinyws_execute(tinyws* parser, const tinyws_settings* settings, const cha
         }                                                                 \
     } while (0)
 
+#define CONTROL_BIT (0b1000u)
+
     if (parser->state == s_dead)
         return 0;
 
@@ -209,12 +211,14 @@ size_t tinyws_execute(tinyws* parser, const tinyws_settings* settings, const cha
         case s_initial: {
             REQUIRES_BYTE();
             unsigned char const byte = *data;
-            CONSUME_BYTE();
             parser->fin = byte & 0b10000000 ? 1 : 0;
             parser->rsv1 = byte & 0b01000000 ? 1 : 0;
             parser->rsv2 = byte & 0b00100000 ? 1 : 0;
             parser->rsv3 = byte & 0b00010000 ? 1 : 0;
             parser->opcode = byte & 0b00001111;
+            if (parser->opcode & CONTROL_BIT && !parser->fin)
+                SET_ERRNO(WSE_EXPECTED_FIN_BIT);
+            CONSUME_BYTE();
             parser->state = s_frame_payload_length;
         } break;
 

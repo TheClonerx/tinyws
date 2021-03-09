@@ -96,25 +96,25 @@ static size_t tinyws_base64_encode(void const* bytes, size_t len, void* out)
 
 void tinyws_mask_bytes(void const* mask, void const* data, void* out, size_t len)
 {
-    unsigned char* mask_bytes = (unsigned char*)mask;
+    unsigned char const* mask_bytes = (unsigned char const*)mask;
     unsigned char const* data_bytes = (unsigned char const*)data;
     unsigned char* out_bytes = (unsigned char*)out;
 
-    size_t allignment_l = (size_t)out & 15;
-    size_t allignment_r = (size_t)data & 15;
+    size_t const allignment_l = (size_t)out & 15;
+    size_t const allignment_r = (size_t)data & 15;
 
-    if (allignment_l != 0 && allignment_l != allignment_r) {
+    if (allignment_l != 0 || allignment_r != 0) {
         for (size_t i = 0; i < len; ++i)
             out_bytes[i] = data_bytes[i] ^ mask_bytes[i % 4];
         return;
     }
 
-    size_t _hem = len % 4;
+    size_t const _hem = len % 4;
 
     for (size_t i = 0; i < len - _hem; i += 4) {
-        out_bytes[i] = data_bytes[i] ^ mask_bytes[0];
-        out_bytes[i + 2] = data_bytes[i + 2] ^ mask_bytes[2];
+        out_bytes[i + 0] = data_bytes[i + 0] ^ mask_bytes[0];
         out_bytes[i + 1] = data_bytes[i + 1] ^ mask_bytes[1];
+        out_bytes[i + 2] = data_bytes[i + 2] ^ mask_bytes[2];
         out_bytes[i + 3] = data_bytes[i + 3] ^ mask_bytes[3];
     }
 

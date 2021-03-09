@@ -125,7 +125,7 @@ void tinyws_mask_bytes(void const* mask, void const* data, void* out, size_t len
 #if 0
 #include <emmintrin.h>
 
-int tinyws_mask_bytes_simd(void const* mask, void const* data, void* out, size_t len)
+void tinyws_mask_bytes_simd(void const* mask, void const* data, void* out, size_t len)
 {
     int32_t mask_i32;
     memcpy(&mask_i32, mask, 4);
@@ -160,18 +160,12 @@ int tinyws_mask_bytes_simd(void const* mask, void const* data, void* out, size_t
             data_bytes += 16;
             out_bytes += 16;
         } else if (diff >= 8) {
-            data_simd = _mm_loadu_si32((__m128i*)data_bytes);
+            data_simd = _mm_loadu_si64((__m128i*)data_bytes);
             data_simd = _mm_xor_si128(data_simd, mask_simd);
-            _mm_storeu_si32((__m128i*)out_bytes, data_simd);
-            i += 4;
-            data_bytes += 4;
-            out_bytes += 4;
-            data_simd = _mm_loadu_si32((__m128i*)data_bytes);
-            data_simd = _mm_xor_si128(data_simd, mask_simd);
-            _mm_storeu_si32((__m128i*)out_bytes, data_simd);
-            i += 4;
-            data_bytes += 4;
-            out_bytes += 4;
+            _mm_storeu_si64((__m128i*)out_bytes, data_simd);
+            i += 8;
+            data_bytes += 8;
+            out_bytes += 8;
         } else if (diff >= 4) {
             data_simd = _mm_loadu_si32((__m128i*)data_bytes);
             data_simd = _mm_xor_si128(data_simd, mask_simd);
@@ -180,20 +174,21 @@ int tinyws_mask_bytes_simd(void const* mask, void const* data, void* out, size_t
             data_bytes += 4;
             out_bytes += 4;
         } else if (diff == 3) {
-            out_bytes[0] = data_bytes[0] ^ mask_bytes[0];
-            out_bytes[1] = data_bytes[1] ^ mask_bytes[1];
+            data_simd = _mm_loadu_si16((__m128i*)data_bytes);
+            data_simd = _mm_xor_si128(data_simd, mask_simd);
+            _mm_storeu_si16((__m128i*)out_bytes, data_simd);
             out_bytes[2] = data_bytes[2] ^ mask_bytes[2];
             i += 3;
         } else if (diff == 2) {
-            out_bytes[0] = data_bytes[0] ^ mask_bytes[0];
-            out_bytes[1] = data_bytes[1] ^ mask_bytes[1];
+            data_simd = _mm_loadu_si16((__m128i*)data_bytes);
+            data_simd = _mm_xor_si128(data_simd, mask_simd);
+            _mm_storeu_si16((__m128i*)out_bytes, data_simd);
             i += 2;
         } else {
             out_bytes[0] = data_bytes[0] ^ mask_bytes[0];
             ++i;
         }
     }
-    return 1;
 }
 #endif
 

@@ -169,6 +169,12 @@ struct tinyws_settings {
     tinyws_cb on_message_complete; // text or binary message ended, note that you might receive CLOSE, PING or PONG in between
 };
 
+/* Masks or unmasks the bytes at `data` */
+/* `mask` must point to a buffer of 4 bytes, corresponding to the mask. */
+/* `data` and `out` must point to a buffer of at least `len` bytes. */
+/* `data` and `out` might point to the same place. */
+void tinyws_mask_bytes(void const* mask, void const* data, void* out, size_t len);
+
 /* Generates the hash required for the Sec-Websocket-Accept header */
 /* `hash_out` must point to a buffer of at least `TINYWS_ACCEPT_HASH_MAX_LENGTH` bytes */
 /* returns the length of the hash, including the NUL terminator on success */

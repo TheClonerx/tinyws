@@ -26,10 +26,10 @@ enum state {
     s_frame_payload_length_64_6, // if payload length == 127
     s_frame_payload_length_64_7, // if payload length == 127
 
-    s_frame_mask_0, // byte 11, if MASK
-    s_frame_mask_1, // byte 12, if MASK
-    s_frame_mask_2, // byte 13, if MASK
-    s_frame_mask_3, // byte 14, if MASK
+    s_frame_mask_0, // if MASK
+    s_frame_mask_1, // if MASK
+    s_frame_mask_2, // if MASK
+    s_frame_mask_3, // if MASK
 
     s_payload_data,
 };
@@ -82,7 +82,7 @@ static int tinyws_sha1_final(tinyws_sha1* state, void* digest)
 // if `out` is NULL, we just calculate the length and return it
 // if an error occur for some reason, 0 is returned
 // otherwise, returns the length, including the NUL terminator
-static size_t tinyws_base64_encode(char const* bytes, size_t len, char* out)
+static size_t tinyws_base64_encode(void const* bytes, size_t len, void* out)
 {
     size_t const out_len = ((4 * len / 3) + 3) & ~3; // + 1 for the NUL terminator
     if (out != NULL) {
@@ -93,6 +93,109 @@ static size_t tinyws_base64_encode(char const* bytes, size_t len, char* out)
     }
     return out_len + 1;
 }
+
+void tinyws_mask_bytes(void const* mask, void const* data, void* out, size_t len)
+{
+    unsigned char* mask_bytes = (unsigned char*)mask;
+    unsigned char const* data_bytes = (unsigned char const*)data;
+    unsigned char* out_bytes = (unsigned char*)out;
+
+    size_t allignment_l = (size_t)out & 15;
+    size_t allignment_r = (size_t)data & 15;
+
+    if (allignment_l != 0 && allignment_l != allignment_r) {
+        for (size_t i = 0; i < len; ++i)
+            out_bytes[i] = data_bytes[i] ^ mask_bytes[i % 4];
+        return;
+    }
+
+    size_t _hem = len % 4;
+
+    for (size_t i = 0; i < len - _hem; i += 4) {
+        out_bytes[i] = data_bytes[i] ^ mask_bytes[0];
+        out_bytes[i + 2] = data_bytes[i + 2] ^ mask_bytes[2];
+        out_bytes[i + 1] = data_bytes[i + 1] ^ mask_bytes[1];
+        out_bytes[i + 3] = data_bytes[i + 3] ^ mask_bytes[3];
+    }
+
+    for (size_t i = len - _hem; i < _hem; ++i)
+        out_bytes[i] = data_bytes[i] ^ mask_bytes[i % 4];
+}
+
+#if 0
+#include <emmintrin.h>
+
+int tinyws_mask_bytes_simd(void const* mask, void const* data, void* out, size_t len)
+{
+    int32_t mask_i32;
+    memcpy(&mask_i32, mask, 4);
+
+    unsigned char* mask_bytes = (unsigned char*)mask;
+    unsigned char const* data_bytes = (unsigned char const*)data;
+    unsigned char* out_bytes = (unsigned char*)out;
+
+    __m128i mask_simd = _mm_set1_epi32(mask_i32);
+    __m128i data_simd;
+
+    for (size_t i = 0; i != len;) {
+        size_t const diff = len - i;
+        if (diff >= 32) {
+            data_simd = _mm_loadu_si128((__m128i*)data_bytes);
+            data_simd = _mm_xor_si128(data_simd, mask_simd);
+            _mm_storeu_si128((__m128i*)out_bytes, data_simd);
+            i += 16;
+            data_bytes += 16;
+            out_bytes += 16;
+            data_simd = _mm_loadu_si128((__m128i*)data_bytes);
+            data_simd = _mm_xor_si128(data_simd, mask_simd);
+            _mm_storeu_si128((__m128i*)out_bytes, data_simd);
+            i += 16;
+            data_bytes += 16;
+            out_bytes += 16;
+        } else if (diff >= 16) {
+            data_simd = _mm_loadu_si128((__m128i*)data_bytes);
+            data_simd = _mm_xor_si128(data_simd, mask_simd);
+            _mm_storeu_si128((__m128i*)out_bytes, data_simd);
+            i += 16;
+            data_bytes += 16;
+            out_bytes += 16;
+        } else if (diff >= 8) {
+            data_simd = _mm_loadu_si32((__m128i*)data_bytes);
+            data_simd = _mm_xor_si128(data_simd, mask_simd);
+            _mm_storeu_si32((__m128i*)out_bytes, data_simd);
+            i += 4;
+            data_bytes += 4;
+            out_bytes += 4;
+            data_simd = _mm_loadu_si32((__m128i*)data_bytes);
+            data_simd = _mm_xor_si128(data_simd, mask_simd);
+            _mm_storeu_si32((__m128i*)out_bytes, data_simd);
+            i += 4;
+            data_bytes += 4;
+            out_bytes += 4;
+        } else if (diff >= 4) {
+            data_simd = _mm_loadu_si32((__m128i*)data_bytes);
+            data_simd = _mm_xor_si128(data_simd, mask_simd);
+            _mm_storeu_si32((__m128i*)out_bytes, data_simd);
+            i += 4;
+            data_bytes += 4;
+            out_bytes += 4;
+        } else if (diff == 3) {
+            out_bytes[0] = data_bytes[0] ^ mask_bytes[0];
+            out_bytes[1] = data_bytes[1] ^ mask_bytes[1];
+            out_bytes[2] = data_bytes[2] ^ mask_bytes[2];
+            i += 3;
+        } else if (diff == 2) {
+            out_bytes[0] = data_bytes[0] ^ mask_bytes[0];
+            out_bytes[1] = data_bytes[1] ^ mask_bytes[1];
+            i += 2;
+        } else {
+            out_bytes[0] = data_bytes[0] ^ mask_bytes[0];
+            ++i;
+        }
+    }
+    return 1;
+}
+#endif
 
 int tinyws_generate_accept_hash(char const* websocket_key, char* hash_out)
 {
@@ -173,20 +276,20 @@ size_t tinyws_execute(tinyws* parser, const tinyws_settings* settings, const cha
         return nread;              \
     } while (0)
 
-#define CALLBACK(name)                                          \
-    do {                                                        \
-        if (settings->on_##name) {                              \
-            if (parser->cb_errno = settings->on_##name(parser)) \
-                SET_ERRNO(WSE_CB_##name);                       \
-        }                                                       \
+#define CALLBACK(name)                                            \
+    do {                                                          \
+        if (settings->on_##name) {                                \
+            if ((parser->cb_errno = settings->on_##name(parser))) \
+                SET_ERRNO(WSE_CB_##name);                         \
+        }                                                         \
     } while (0)
 
-#define CALLBACK_DATA(name, d, l)                                         \
-    do {                                                                  \
-        if (settings->on_##name) {                                        \
-            if (parser->cb_errno = settings->on_##name(parser, (d), (l))) \
-                SET_ERRNO(WSE_CB_##name);                                 \
-        }                                                                 \
+#define CALLBACK_DATA(name, d, l)                                           \
+    do {                                                                    \
+        if (settings->on_##name) {                                          \
+            if ((parser->cb_errno = settings->on_##name(parser, (d), (l)))) \
+                SET_ERRNO(WSE_CB_##name);                                   \
+        }                                                                   \
     } while (0)
 
 #define CONTROL_BIT (0b1000u)

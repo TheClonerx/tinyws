@@ -125,7 +125,7 @@ void tinyws_mask_bytes(void const* mask, void const* data, void* out, size_t len
 #if 0
 #include <emmintrin.h>
 
-void tinyws_mask_bytes_simd(void const* mask, void const* data, void* out, size_t len)
+void tinyws_mask_bytes_sse2(void const* mask, void const* data, void* out, size_t len)
 {
     int32_t mask_i32;
     memcpy(&mask_i32, mask, 4);

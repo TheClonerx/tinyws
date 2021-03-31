@@ -89,7 +89,7 @@ static size_t tinyws_base64_encode(void const* bytes, size_t len, void* out)
         int evp_len = EVP_EncodeBlock(out, bytes, len);
         if (evp_len <= 0)
             return 0;
-        assert(out_len == evp_len);
+        assert(out_len == (unsigned)evp_len);
     }
     return out_len + 1;
 }

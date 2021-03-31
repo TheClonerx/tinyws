@@ -1,5 +1,5 @@
 cmake_minimum_required(VERSION 3.19)
-project(tinyws LANGUAGES C CXX)
+project(tinyws LANGUAGES C)
 
 add_library(tinyws SHARED)
 target_include_directories(tinyws PUBLIC ${CMAKE_SOURCE_DIR}/include)

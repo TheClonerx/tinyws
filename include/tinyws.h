@@ -197,7 +197,7 @@ struct tinyws_settings {
 /* `mask` must point to a buffer of 4 bytes, corresponding to the mask. */
 /* `data` and `out` must point to a buffer of at least `len` bytes. */
 /* `data` and `out` might point to the same place. */
-void tinyws_mask_bytes(void const* mask, void const* data, void* out, size_t len);
+void tinyws_mask_bytes(void const* mask, void const* data, void* out, size_t len) TINYWS_NONNULL(1, 2, 3);
 
 /* Generates the hash required for the Sec-Websocket-Accept header */
 /* `hash_out` must point to a buffer of at least `TINYWS_ACCEPT_HASH_MAX_LENGTH` bytes */

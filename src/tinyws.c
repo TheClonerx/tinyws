@@ -217,17 +217,17 @@ int tinyws_generate_accept_hash(char const* websocket_key, char* hash_out)
     return len;
 }
 
-int tinyws_init(tinyws* parser, enum tinyws_type type)
+TINYWS_BOOL tinyws_init(tinyws* parser, enum tinyws_type type)
 {
     memset(parser, 0, sizeof(*parser));
     parser->type = type;
-    return 1;
+    return TINYWS_TRUE;
 }
 
-int tinyws_settings_init(tinyws_settings* settings)
+TINYWS_BOOL tinyws_settings_init(tinyws_settings* settings)
 {
     memset(settings, 0, sizeof(*settings));
-    return 1;
+    return TINYWS_TRUE;
 }
 
 size_t tinyws_execute(tinyws* parser, const tinyws_settings* settings, const char* data, size_t len)

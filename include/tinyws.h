@@ -3,7 +3,6 @@
 
 #include <stddef.h>
 
-
 /* Custom macros */
 /* You're allowed to define these macros according to your needs. */
 /* Just make sure the compiled source file also uses the same definitions please */
@@ -29,12 +28,29 @@
 #ifndef TINYWS_FALSE
 #define TINYWS_FALSE (0)
 #endif
+
+/* Whatever SSE2 instructions should be used for masking payloads */
+/* #undef  TINYWS_MASK_BYTES_SSE2   */ /* detect at compile time  */
+/* #define TINYWS_MASK_BYTES_SSE2 0 */ /* do not use SSE2         */
+/* #define TINYWS_MASK_BYTES_SSE2 1 */ /* use SSE2                */
+
 /* End custom macros */
 
 #define TINYWS_ACCEPT_HASH_MAX_LENGTH 32
 
 #ifndef TINYWS_NONNULL
 #define TINYWS_NONNULL
+#endif
+
+#ifndef TINYWS_MASK_BYTES_SSE2
+#if (defined(__x86_64__) || defined(_M_X64))
+// All x86_64 CPUs are required to have support for SSE2
+#define TINYWS_MASK_BYTES_SSE2 1
+#else
+// Either we are compiling for x86_32, which might not have support for SSE2
+// Or we are compiling to a completely different architecture
+#define TINYWS_MASK_BYTES_SSE2 0
+#endif
 #endif
 
 #ifdef __cplusplus
@@ -198,6 +214,11 @@ struct tinyws_settings {
 /* `data` and `out` must point to a buffer of at least `len` bytes. */
 /* `data` and `out` might point to the same place. */
 void tinyws_mask_bytes(void const* mask, void const* data, void* out, size_t len) TINYWS_NONNULL(1, 2, 3);
+
+#if TINYWS_MASK_BYTES_SSE2 == 1
+/* Same as tinyws_mask_bytes, but uses SSE2 instructions */
+void tinyws_mask_bytes_sse2(void const* mask, void const* data, void* out, size_t len) TINYWS_NONNULL(1, 2, 3);
+#endif
 
 /* Generates the hash required for the Sec-Websocket-Accept header */
 /* `hash_out` must point to a buffer of at least `TINYWS_ACCEPT_HASH_MAX_LENGTH` bytes */

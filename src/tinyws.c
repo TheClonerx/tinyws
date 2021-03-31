@@ -122,8 +122,9 @@ void tinyws_mask_bytes(void const* mask, void const* data, void* out, size_t len
         out_bytes[i] = data_bytes[i] ^ mask_bytes[i % 4];
 }
 
-#if (defined(__x86_64__) || defined(_M_X64)) && __has_include(<emmintrin.h>)
-#define TINYWS_MASK_BYTES_SSE2
+#if TINYWS_MASK_BYTES_SSE2 == 1
+/* TODO: Others compilers might require you to include a different header */
+/* This has only been tested for gcc and clang */
 #include <emmintrin.h>
 
 void tinyws_mask_bytes_sse2(void const* mask, void const* data, void* out, size_t len)

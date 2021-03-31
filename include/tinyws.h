@@ -3,15 +3,39 @@
 
 #include <stddef.h>
 
-#if !defined(TINYWS_NONNULL) && (defined(__clang__) || defined(__GNUC__)) && __has_attribute(nonnull)
+
+/* Custom macros */
+/* You're allowed to define these macros according to your needs. */
+/* Just make sure the compiled source file also uses the same definitions please */
+
+/* Tells the compiler to generate a warning if the arguments at the specified positions are null */
+#ifndef TINYWS_NONNULL
+#if (defined(__clang__) || defined(__GNUC__)) && __has_attribute(nonnull)
 #define TINYWS_NONNULL(...) __attribute__((nonnull(__VA_ARGS__)))
 #endif
+#endif
+
+/* Boolean type, you could also define it to _Bool */
+#ifndef TINYWS_BOOL
+#define TINYWS_BOOL int
+#endif
+
+/* True value, you could also define it to ((_Bool)+1u) */
+#ifndef TINYWS_TRUE
+#define TINYWS_TRUE (1)
+#endif
+
+/* False value, you could also define it to ((_Bool)+0u) */
+#ifndef TINYWS_FALSE
+#define TINYWS_FALSE (0)
+#endif
+/* End custom macros */
+
+#define TINYWS_ACCEPT_HASH_MAX_LENGTH 32
 
 #ifndef TINYWS_NONNULL
 #define TINYWS_NONNULL
 #endif
-
-#define TINYWS_ACCEPT_HASH_MAX_LENGTH 32
 
 #ifdef __cplusplus
 extern "C" {
@@ -184,12 +208,12 @@ int tinyws_generate_accept_hash(char const* websocket_key, char* hash_out) TINYW
 /* Initializes the tinyws context, one context should be used per connection */
 /* returns non-zero on success */
 /* returns zero on error */
-int tinyws_init(tinyws* parser, enum tinyws_type type) TINYWS_NONNULL(1);
+TINYWS_BOOL tinyws_init(tinyws* parser, enum tinyws_type type) TINYWS_NONNULL(1);
 
 /* Initializes the tinyws context settings, one must be used per context */
 /* returns non-zero on success */
 /* returns zero on error */
-int tinyws_settings_init(tinyws_settings* settings) TINYWS_NONNULL(1);
+TINYWS_BOOL tinyws_settings_init(tinyws_settings* settings) TINYWS_NONNULL(1);
 
 /* To signify EOF, set `len` to 0 */
 /* Otherwhise, `data` must point to a buffer of at least `len` bytes */

@@ -597,6 +597,10 @@ size_t tinyws_execute(tinyws* parser, const tinyws_settings* settings, const cha
                 CONSUME_N_BYTES(bytes_to_process);
             }
         }
+        default: {
+            fprintf(stderr, "UNHANDLED STATE %d\n", parser->state);
+            assert(parser->state);
+        }
         }
     end_loop:;
     }

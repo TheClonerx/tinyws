@@ -26,3 +26,10 @@ target_compile_options(tinyws_a PRIVATE
     >
 )
 target_link_libraries(tinyws_a PRIVATE OpenSSL::Crypto OpenSSL::SSL)
+
+
+if (${CMAKE_CURRENT_LIST_DIR} STREQUAL ${CMAKE_SOURCE_DIR})
+    include(CTest)
+    enable_testing()
+    add_subdirectory(tests)
+endif()

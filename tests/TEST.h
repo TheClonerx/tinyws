@@ -1,0 +1,107 @@
+#ifndef TCX_TEST_H
+#define TCX_TEST_H
+
+#include <stdio.h>
+#include <stdlib.h>
+#include <string.h>
+
+static char* TCX_TEST_str_repr(char const* str, size_t size)
+{
+    static char const* char_repr_table[] = { "\\x00", "\\x01", "\\x02", "\\x03", "\\x04", "\\x05", "\\x06", "\\x07", "\\x08", "\\t", "\\n", "\\x0b", "\\x0c", "\\r", "\\x0e", "\\x0f", "\\x10", "\\x11", "\\x12", "\\x13", "\\x14", "\\x15", "\\x16", "\\x17", "\\x18", "\\x19", "\\x1a", "\\x1b", "\\x1c", "\\x1d", "\\x1e", "\\x1f", " ", "!", "\\\"", "#", "$", "%", "&", "'", "(", ")", "*", "+", ",", "-", ".", "/", "0", "1", "2", "3", "4", "5", "6", "7", "8", "9", ":", ";", "<", "=", ">", "?", "@", "A", "B", "C", "D", "E", "F", "G", "H", "I", "J", "K", "L", "M", "N", "O", "P", "Q", "R", "S", "T", "U", "V", "W", "X", "Y", "Z", "[", "\\\\", "]", "^", "_", "`", "a", "b", "c", "d", "e", "f", "g", "h", "i", "j", "k", "l", "m", "n", "o", "p", "q", "r", "s", "t", "u", "v", "w", "x", "y", "z", "{", "|", "}", "~", "\\x7f", "\\x80", "\\x81", "\\x82", "\\x83", "\\x84", "\\x85", "\\x86", "\\x87", "\\x88", "\\x89", "\\x8a", "\\x8b", "\\x8c", "\\x8d", "\\x8e", "\\x8f", "\\x90", "\\x91", "\\x92", "\\x93", "\\x94", "\\x95", "\\x96", "\\x97", "\\x98", "\\x99", "\\x9a", "\\x9b", "\\x9c", "\\x9d", "\\x9e", "\\x9f", "\\xa0", "\\xa1", "\\xa2", "\\xa3", "\\xa4", "\\xa5", "\\xa6", "\\xa7", "\\xa8", "\\xa9", "\\xaa", "\\xab", "\\xac", "\\xad", "\\xae", "\\xaf", "\\xb0", "\\xb1", "\\xb2", "\\xb3", "\\xb4", "\\xb5", "\\xb6", "\\xb7", "\\xb8", "\\xb9", "\\xba", "\\xbb", "\\xbc", "\\xbd", "\\xbe", "\\xbf", "\\xc0", "\\xc1", "\\xc2", "\\xc3", "\\xc4", "\\xc5", "\\xc6", "\\xc7", "\\xc8", "\\xc9", "\\xca", "\\xcb", "\\xcc", "\\xcd", "\\xce", "\\xcf", "\\xd0", "\\xd1", "\\xd2", "\\xd3", "\\xd4", "\\xd5", "\\xd6", "\\xd7", "\\xd8", "\\xd9", "\\xda", "\\xdb", "\\xdc", "\\xdd", "\\xde", "\\xdf", "\\xe0", "\\xe1", "\\xe2", "\\xe3", "\\xe4", "\\xe5", "\\xe6", "\\xe7", "\\xe8", "\\xe9", "\\xea", "\\xeb", "\\xec", "\\xed", "\\xee", "\\xef", "\\xf0", "\\xf1", "\\xf2", "\\xf3", "\\xf4", "\\xf5", "\\xf6", "\\xf7", "\\xf8", "\\xf9", "\\xfa", "\\xfb", "\\xfc", "\\xfd", "\\xfe", "\\xff" };
+
+    size_t repr_len = 2 + 4 * size;
+    char* repr_buf = malloc(repr_len);
+    char* it = repr_buf;
+
+    *(it++) = '"';
+    for (size_t i = 0; i < size; ++i)
+        it += snprintf(it, repr_buf + repr_len - it, "%s", char_repr_table[(unsigned char)str[i]]);
+
+    *(it++) = '"';
+    return repr_buf;
+}
+
+#define DEF_TEST(name) int TEST_##name##_func(char const* TEST_NAME)
+
+#define EXPECTED_EQ(lhs, rhs)                                                \
+    do {                                                                     \
+        if ((lhs) != (rhs)) {                                                \
+            char* lhs_repr = TCX_TEST_str_repr(#lhs, sizeof(#lhs));          \
+            char* rhs_repr = TCX_TEST_str_repr(#rhs, sizeof(#rhs));          \
+            fprintf("TEST %s failed:\n\texpression %s is not equal to %s\n", \
+                TEST_NAME, lhs_repr, rhs_repr);                              \
+            free(lhs_repr);                                                  \
+            free(rhs_repr);                                                  \
+            return -1;                                                       \
+        } else {                                                             \
+            fprintf(stderr, "TEST %s passed\n", TEST_NAME);                  \
+            return 0;                                                        \
+        }                                                                    \
+    } while (0)
+
+#define EXPECTED_BYTES_EQ(s1, s2, sz)                                      \
+    do {                                                                   \
+        if (memcmp((s1), (s2), sz) != 0) {                                 \
+            char* s1_repr = TCX_TEST_str_repr(s1, sz);                     \
+            char* s2_repr = TCX_TEST_str_repr(s2, sz);                     \
+            fprintf(stderr, "TEST failed: %s:\n\t%s is not equal to %s\n", \
+                TEST_NAME, s1_repr, s2_repr);                              \
+            free(s1_repr);                                                 \
+            free(s2_repr);                                                 \
+            return -1;                                                     \
+        } else {                                                           \
+            fprintf(stderr, "TEST passed: %s\n", TEST_NAME);               \
+            return 0;                                                      \
+        }                                                                  \
+    } while (0)
+
+struct TestNode {
+    struct TestNode* next;
+    char const* name;
+    int result;
+};
+
+struct TestList {
+    struct TestNode *front, *back;
+};
+
+#define BEGIN_TESTING \
+    {                 \
+        struct TestList TEST_LIST = {};
+#define TEST(test_name)                                      \
+    do {                                                \
+        int const result = TEST_##test_name##_func(#test_name);   \
+        if (TEST_LIST.front == NULL) {                  \
+            TEST_LIST.front = &(struct TestNode) {      \
+                .next = NULL,                           \
+                .name = #test_name,                          \
+                .result = result                        \
+            };                                          \
+            TEST_LIST.back = TEST_LIST.front;           \
+        } else {                                        \
+            TEST_LIST.back->next = &(struct TestNode) { \
+                .next = NULL,                           \
+                .name = #test_name,                          \
+                .result = result                        \
+            };                                          \
+            TEST_LIST.back = TEST_LIST.back->next;      \
+        }                                               \
+    } while (0)
+
+#define END_TESTING                                                              \
+    do {                                                                         \
+        int test_failed = 0;                                                     \
+        int test_total = 0;                                                      \
+        for (struct TestNode* it = TEST_LIST.front; it != NULL; it = it->next) { \
+            ++test_total;                                                        \
+            if (it->result)                                                      \
+                ++test_failed;                                                   \
+        }                                                                        \
+        printf("Resume: %03d/%03d passed (%03.02f%%)\n",                         \
+            test_total - test_failed, test_total,                                \
+            (test_total - test_failed) / (float)test_total * 100);               \
+        exit(test_failed ? EXIT_FAILURE : EXIT_SUCCESS);                         \
+    } while (0);                                                                 \
+    }
+
+#endif

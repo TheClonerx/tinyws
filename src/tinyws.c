@@ -32,6 +32,12 @@ enum state {
     s_frame_mask_3, // if MASK
 
     s_payload_data,
+
+    s_text_data,
+    s_binary_data,
+    s_ping_data,
+    s_pong_data,
+    s_close_data,
 };
 
 static char const websocket_guid[] = "258EAFA5-E914-47DA-95CA-C5AB0DC85B11";
@@ -382,6 +388,12 @@ size_t tinyws_execute(tinyws* parser, const tinyws_settings* settings, const cha
         }                                                                   \
     } while (0)
 
+#define CHANGE_STATE(new_state)        \
+    do {                               \
+        parser->state = s_##new_state; \
+        goto end_loop;                 \
+    } while (0)
+
 #define CONTROL_BIT (0b1000u)
 
     if (parser->state == s_dead)
@@ -412,9 +424,8 @@ size_t tinyws_execute(tinyws* parser, const tinyws_settings* settings, const cha
             if (parser->opcode & CONTROL_BIT && !parser->fin)
                 SET_ERRNO(WSE_EXPECTED_FIN_BIT);
             CONSUME_BYTE();
-            parser->state = s_frame_payload_length;
-        } break;
-
+            CHANGE_STATE(frame_payload_length);
+        }
         case s_frame_payload_length: {
             REQUIRES_BYTE();
             unsigned char const byte = *data;
@@ -427,138 +438,133 @@ size_t tinyws_execute(tinyws* parser, const tinyws_settings* settings, const cha
 
             unsigned const payload_len = byte & 0b01111111;
             if (payload_len == 126) {
-                parser->state = s_frame_payload_length_16_0;
+                CHANGE_STATE(frame_payload_length_16_0);
             } else if (payload_len == 127) {
-                parser->state = s_frame_payload_length_64_0;
+                CHANGE_STATE(frame_payload_length_64_0);
             } else {
                 parser->payload_length = payload_len;
                 if (parser->masked) {
-                    parser->state = s_frame_mask_0;
+                    CHANGE_STATE(frame_mask_0);
                 } else {
                     parser->nread = 0;
-                    parser->state = s_payload_data;
+                    CHANGE_STATE(payload_data);
                 }
             }
-
-        } break;
-
+        }
         case s_frame_payload_length_16_0: {
             REQUIRES_BYTE();
             unsigned char const byte = *data;
             CONSUME_BYTE();
             parser->payload_length = byte;
-            parser->state = s_frame_payload_length_16_1;
-        } break;
+            CHANGE_STATE(frame_payload_length_16_1);
+        }
         case s_frame_payload_length_16_1: {
             REQUIRES_BYTE();
             unsigned char const byte = *data;
             CONSUME_BYTE();
             parser->payload_length &= byte << (8 * 1);
-            parser->state = s_frame_payload_length_16_2;
-        } break;
+            CHANGE_STATE(frame_payload_length_16_2);
+        }
         case s_frame_payload_length_16_2: {
             REQUIRES_BYTE();
             unsigned char const byte = *data;
             CONSUME_BYTE();
             parser->payload_length &= byte << (8 * 2);
-            parser->state = s_frame_payload_length_16_3;
-        } break;
+            CHANGE_STATE(frame_payload_length_16_3);
+        }
         case s_frame_payload_length_16_3: {
             REQUIRES_BYTE();
             unsigned char const byte = *data;
             CONSUME_BYTE();
             parser->payload_length &= byte << (8 * 3);
             if (parser->masked)
-                parser->state = s_frame_mask_0;
+                CHANGE_STATE(frame_mask_0);
             else
-                parser->state = s_payload_data;
-        } break;
-
+                CHANGE_STATE(payload_data);
+        }
         case s_frame_payload_length_64_0: {
             REQUIRES_BYTE();
             unsigned char const byte = *data;
             CONSUME_BYTE();
             parser->payload_length = byte;
-            parser->state = s_frame_payload_length_64_1;
-        } break;
+            CHANGE_STATE(frame_payload_length_64_1);
+        }
         case s_frame_payload_length_64_1: {
             REQUIRES_BYTE();
             unsigned char const byte = *data;
             CONSUME_BYTE();
             parser->payload_length &= byte << (8 * 1);
-            parser->state = s_frame_payload_length_64_2;
-        } break;
+            CHANGE_STATE(frame_payload_length_64_2);
+        }
         case s_frame_payload_length_64_2: {
             REQUIRES_BYTE();
             unsigned char const byte = *data;
             CONSUME_BYTE();
             parser->payload_length &= byte << (8 * 2);
-            parser->state = s_frame_payload_length_64_3;
-        } break;
+            CHANGE_STATE(frame_payload_length_64_3);
+        }
         case s_frame_payload_length_64_3: {
             REQUIRES_BYTE();
             unsigned char const byte = *data;
             CONSUME_BYTE();
             parser->payload_length &= byte << (8 * 3);
-            parser->state = s_frame_payload_length_64_4;
-        } break;
+            CHANGE_STATE(frame_payload_length_64_4);
+        }
         case s_frame_payload_length_64_4: {
             REQUIRES_BYTE();
             unsigned long long const byte = *data;
             CONSUME_BYTE();
             parser->payload_length &= byte << (8 * 4);
-            parser->state = s_frame_payload_length_64_5;
-        } break;
+            CHANGE_STATE(frame_payload_length_64_5);
+        }
         case s_frame_payload_length_64_5: {
             REQUIRES_BYTE();
             unsigned long long const byte = *data;
             CONSUME_BYTE();
             parser->payload_length &= byte << (8 * 5);
-            parser->state = s_frame_payload_length_64_6;
-        } break;
+            CHANGE_STATE(frame_payload_length_64_6);
+        }
         case s_frame_payload_length_64_6: {
             REQUIRES_BYTE();
             unsigned long long const byte = *data;
             CONSUME_BYTE();
             parser->payload_length &= byte << (8 * 6);
-            parser->state = s_frame_payload_length_64_7;
-        } break;
+            CHANGE_STATE(frame_payload_length_64_7);
+        }
         case s_frame_payload_length_64_7: {
             REQUIRES_BYTE();
             unsigned long long const byte = *data;
             CONSUME_BYTE();
             parser->payload_length &= byte << (8 * 7);
             if (parser->masked)
-                parser->state = s_frame_mask_0;
+                CHANGE_STATE(frame_mask_0);
             else
-                parser->state = s_payload_data;
-        } break;
-
+                CHANGE_STATE(payload_data);
+        }
         case s_frame_mask_0: {
             REQUIRES_BYTE();
             parser->mask[0] = *data;
             CONSUME_BYTE();
-            parser->state = s_frame_mask_1;
-        } break;
+            CHANGE_STATE(frame_mask_1);
+        }
         case s_frame_mask_1: {
             REQUIRES_BYTE();
             parser->mask[1] = *data;
             CONSUME_BYTE();
-            parser->state = s_frame_mask_2;
-        } break;
+            CHANGE_STATE(frame_mask_2);
+        }
         case s_frame_mask_2: {
             REQUIRES_BYTE();
             parser->mask[2] = *data;
             CONSUME_BYTE();
-            parser->state = s_frame_mask_3;
-        } break;
+            CHANGE_STATE(frame_mask_3);
+        }
         case s_frame_mask_3: {
             REQUIRES_BYTE();
             parser->mask[3] = *data;
             CONSUME_BYTE();
-            parser->state = s_payload_data;
-        } break;
-
+            CHANGE_STATE(payload_data);
+        }
         case s_payload_data: {
             if (parser->nread == 0) {
                 CALLBACK(frame);
@@ -579,7 +585,7 @@ size_t tinyws_execute(tinyws* parser, const tinyws_settings* settings, const cha
             }
 
             if (parser->payload_length != 0) {
-                parser->state = s_initial;
+                CHANGE_STATE(initial);
             } else {
                 REQUIRES_BYTE();
                 unsigned long long const remaining_bytes = parser->payload_length - parser->nread;
@@ -587,11 +593,12 @@ size_t tinyws_execute(tinyws* parser, const tinyws_settings* settings, const cha
                 CALLBACK_DATA(payload, data, bytes_to_process);
                 parser->nread += bytes_to_process;
                 if (parser->payload_length == parser->nread)
-                    parser->state = s_initial;
+                    CHANGE_STATE(initial);
                 CONSUME_N_BYTES(bytes_to_process);
             }
-        } break;
         }
+        }
+    end_loop:;
     }
     return nread;
 }

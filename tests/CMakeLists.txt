@@ -9,5 +9,6 @@ function(add_tinyws_test test_name)
 endfunction(add_tinyws_test)
 
 add_tinyws_test(byte_masking)
+add_tinyws_test(frame_creation)
 
 add_custom_target(tests COMMAND run_tests DEPENDS ${test_list})

@@ -17,6 +17,8 @@ DEF_TEST(masking_roundtrip)
     tinyws_mask_bytes(mask, masked_data, unmasked_data, sizeof(data_to_mask));
 
     EXPECTED_BYTES_EQ(data_to_mask, unmasked_data, sizeof(data_to_mask));
+
+    SUCCESS();
 }
 
 #if TINYWS_MASK_BYTES_SSE2 == 1
@@ -29,6 +31,8 @@ DEF_TEST(masking_roundtrip_sse2)
     tinyws_mask_bytes_sse2(mask, masked_data, unmasked_data, sizeof(data_to_mask));
 
     EXPECTED_BYTES_EQ(data_to_mask, unmasked_data, sizeof(data_to_mask));
+
+    SUCCESS();
 }
 #endif
 

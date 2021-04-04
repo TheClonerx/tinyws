@@ -23,20 +23,22 @@ static char* TCX_TEST_str_repr(char const* str, size_t size)
 
 #define DEF_TEST(name) int TEST_##name##_func(char const* TEST_NAME)
 
-#define EXPECTED_EQ(lhs, rhs)                                                \
-    do {                                                                     \
-        if ((lhs) != (rhs)) {                                                \
-            char* lhs_repr = TCX_TEST_str_repr(#lhs, sizeof(#lhs));          \
-            char* rhs_repr = TCX_TEST_str_repr(#rhs, sizeof(#rhs));          \
-            fprintf("TEST %s failed:\n\texpression %s is not equal to %s\n", \
-                TEST_NAME, lhs_repr, rhs_repr);                              \
-            free(lhs_repr);                                                  \
-            free(rhs_repr);                                                  \
-            return -1;                                                       \
-        } else {                                                             \
-            fprintf(stderr, "TEST %s passed\n", TEST_NAME);                  \
-            return 0;                                                        \
-        }                                                                    \
+#define EXPECTED_EQ(lhs, rhs)                                                        \
+    do {                                                                             \
+        if ((lhs) != (rhs)) {                                                        \
+            char* lhs_repr = TCX_TEST_str_repr(#lhs, sizeof(#lhs));                  \
+            char* rhs_repr = TCX_TEST_str_repr(#rhs, sizeof(#rhs));                  \
+            fprintf(stderr, "TEST %s failed:\n\texpression %s is not equal to %s\n", \
+                TEST_NAME, lhs_repr, rhs_repr);                                      \
+            free(lhs_repr);                                                          \
+            free(rhs_repr);                                                          \
+            return -1;                                                               \
+        }                                                                            \
+    } while (0)
+
+#define SUCCESS() \
+    do {          \
+        return 0; \
     } while (0)
 
 #define EXPECTED_BYTES_EQ(s1, s2, sz)                                      \
@@ -49,9 +51,6 @@ static char* TCX_TEST_str_repr(char const* str, size_t size)
             free(s1_repr);                                                 \
             free(s2_repr);                                                 \
             return -1;                                                     \
-        } else {                                                           \
-            fprintf(stderr, "TEST passed: %s\n", TEST_NAME);               \
-            return 0;                                                      \
         }                                                                  \
     } while (0)
 
@@ -68,24 +67,27 @@ struct TestList {
 #define BEGIN_TESTING \
     {                 \
         struct TestList TEST_LIST = {};
-#define TEST(test_name)                                      \
-    do {                                                \
-        int const result = TEST_##test_name##_func(#test_name);   \
-        if (TEST_LIST.front == NULL) {                  \
-            TEST_LIST.front = &(struct TestNode) {      \
-                .next = NULL,                           \
-                .name = #test_name,                          \
-                .result = result                        \
-            };                                          \
-            TEST_LIST.back = TEST_LIST.front;           \
-        } else {                                        \
-            TEST_LIST.back->next = &(struct TestNode) { \
-                .next = NULL,                           \
-                .name = #test_name,                          \
-                .result = result                        \
-            };                                          \
-            TEST_LIST.back = TEST_LIST.back->next;      \
-        }                                               \
+#define TEST(test_name)                                         \
+    do {                                                        \
+        int const result = TEST_##test_name##_func(#test_name); \
+        if (TEST_LIST.front == NULL) {                          \
+            TEST_LIST.front = &(struct TestNode) {              \
+                .next = NULL,                                   \
+                .name = #test_name,                             \
+                .result = result                                \
+            };                                                  \
+            TEST_LIST.back = TEST_LIST.front;                   \
+        } else {                                                \
+            TEST_LIST.back->next = &(struct TestNode) {         \
+                .next = NULL,                                   \
+                .name = #test_name,                             \
+                .result = result                                \
+            };                                                  \
+            TEST_LIST.back = TEST_LIST.back->next;              \
+        }                                                       \
+        if (result == 0) {                                      \
+            fprintf(stderr, "TEST passed: %s\n", #test_name);   \
+        }                                                       \
     } while (0)
 
 #define END_TESTING                                                              \

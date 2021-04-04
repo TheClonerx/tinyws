@@ -560,9 +560,23 @@ size_t tinyws_execute(tinyws* parser, const tinyws_settings* settings, const cha
         } break;
 
         case s_payload_data: {
-
-            if (parser->nread == 0)
+            if (parser->nread == 0) {
                 CALLBACK(frame);
+
+                switch (parser->opcode) {
+                case TINYWS_CLOSE:
+                    CALLBACK(close);
+                    break;
+                case TINYWS_PING:
+                    CALLBACK(ping);
+                    break;
+                case TINYWS_PONG:
+                    CALLBACK(pong);
+                    break;
+                default:
+                    break;
+                }
+            }
 
             if (parser->payload_length != 0) {
                 parser->state = s_initial;

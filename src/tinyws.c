@@ -217,6 +217,99 @@ int tinyws_generate_accept_hash(char const* websocket_key, char* hash_out)
     return len;
 }
 
+TINYWS_BOOL tinyws_make_frame(enum tinyws_opcode opcode, void const* mask, void* frame_out, size_t* frame_out_size, void const* data, size_t data_size)
+{
+    // One byte for FIN, RSV1-3 and OPCODE bits
+    // One byte for MASK and payload len
+    size_t bytes_needed = 2;
+    size_t start_payload;
+
+    if (data) {
+        if (opcode == TINYWS_CLOSE) {
+            if (data_size < 2)
+                return TINYWS_FALSE;
+            bytes_needed += 2;
+        }
+
+        if (mask)
+            bytes_needed += 4;
+        if (data_size > UINT16_MAX)
+            bytes_needed += 8;
+        else if (data_size > 125)
+            bytes_needed += 2;
+
+        // Check if we can fit the frame in size_t
+        // `SIZE_MAX - data_size` is the number of bytes left
+        if (SIZE_MAX - data_size < bytes_needed)
+            return TINYWS_FALSE;
+
+        start_payload = bytes_needed;
+        bytes_needed += data_size;
+    }
+
+    if (!frame_out) {
+        *frame_out_size = bytes_needed;
+        return TINYWS_TRUE;
+    }
+
+    if (*frame_out_size < bytes_needed)
+        return TINYWS_FALSE;
+
+    unsigned char bytes[2 + 8 + 4];
+    bytes[0] = 0b10000000 | opcode;
+    bytes[1] = 0b10000000 * (mask != NULL);
+    if (data_size > UINT16_MAX) {
+        bytes[1] |= 127;
+        bytes[2] = (data_size >> 0) & 0xFF;
+        bytes[3] = (data_size >> 8) & 0xFF;
+        bytes[4] = (data_size >> 16) & 0xFF;
+        bytes[5] = (data_size >> 24) & 0xFF;
+        bytes[6] = (data_size >> 32) & 0xFF;
+        bytes[7] = (data_size >> 40) & 0xFF;
+        bytes[8] = (data_size >> 48) & 0xFF;
+        bytes[9] = (data_size >> 56) & 0xFF;
+        if (mask) {
+            bytes[10] = ((unsigned char const*)mask)[0];
+            bytes[11] = ((unsigned char const*)mask)[1];
+            bytes[12] = ((unsigned char const*)mask)[2];
+            bytes[13] = ((unsigned char const*)mask)[3];
+        }
+
+    } else if (data_size > 125) {
+        bytes[1] |= 126;
+        bytes[2] = (data_size >> 0) & 0xFF;
+        bytes[3] = (data_size >> 8) & 0xFF;
+        if (mask) {
+            bytes[4] = ((unsigned char const*)mask)[0];
+            bytes[5] = ((unsigned char const*)mask)[1];
+            bytes[6] = ((unsigned char const*)mask)[2];
+            bytes[7] = ((unsigned char const*)mask)[3];
+        }
+    } else {
+        bytes[1] |= data_size;
+        if (mask) {
+            bytes[2] = ((unsigned char const*)mask)[0];
+            bytes[3] = ((unsigned char const*)mask)[1];
+            bytes[4] = ((unsigned char const*)mask)[2];
+            bytes[5] = ((unsigned char const*)mask)[3];
+        }
+    }
+
+    memcpy(frame_out, bytes, start_payload);
+
+    if (mask) {
+#ifdef TINYWS_MASK_BYTES_SSE2
+        tinyws_mask_bytes_sse2(mask, data, (char*)frame_out + start_payload, data_size);
+#else
+        tinyws_mask_bytes(mask, data, (char*)frame_out + start_payload, data_size);
+#endif
+    } else {
+        memcpy((char*)frame_out + start_payload, data, data_size);
+    }
+
+    return TINYWS_TRUE;
+}
+
 TINYWS_BOOL tinyws_init(tinyws* parser, enum tinyws_type type)
 {
     memset(parser, 0, sizeof(*parser));

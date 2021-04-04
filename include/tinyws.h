@@ -226,6 +226,8 @@ void tinyws_mask_bytes_sse2(void const* mask, void const* data, void* out, size_
 /* returns zero on error */
 int tinyws_generate_accept_hash(char const* websocket_key, char* hash_out) TINYWS_NONNULL(1, 2);
 
+TINYWS_BOOL tinyws_make_frame(enum tinyws_opcode opcode, void const* mask, void* frame_out, size_t* frame_out_size, void const* data, size_t data_size) TINYWS_NONNULL(4);
+
 /* Initializes the tinyws context, one context should be used per connection */
 /* returns non-zero on success */
 /* returns zero on error */

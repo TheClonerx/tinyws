@@ -149,7 +149,8 @@ enum tinyws_status_code {
     XX(INVALID_EOF_STATE, "stream ended at an unexpected time")              \
     XX(UNEXPECTED_MASK_BIT, "client received a frame with the MASK bit set") \
     XX(EXPECTED_MASK_BIT, "server received a frame with the MASK bit unset") \
-    XX(EXPECTED_FIN_BIT, "received a control frame with the FIN bit unset")
+    XX(EXPECTED_FIN_BIT, "received a control frame with the FIN bit unset")  \
+    XX(BAD_CLOSE_STATUS, "close status payload size must be either 0 or greater than 2")
 
 #define WS_ERRNO_GEN(n, s) WSE_##n,
 enum tinyws_errno {

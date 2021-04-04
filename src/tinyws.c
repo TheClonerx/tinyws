@@ -566,21 +566,30 @@ size_t tinyws_execute(tinyws* parser, const tinyws_settings* settings, const cha
             CHANGE_STATE(payload_data);
         }
         case s_payload_data: {
-            if (parser->nread == 0) {
-                CALLBACK(frame);
+            if (parser->opcode == TINYWS_CLOSE) {
+                if (parser->payload_length == 0 || parser->payload_length > 2) {
+                    CALLBACK(frame);
+                    CALLBACK(close);
+                    CHANGE_STATE(close_data);
+                } else
+                    SET_UNRECOVERABLE_ERRNO(WSE_BAD_CLOSE_STATUS);
+                break;
+            } else {
 
                 switch (parser->opcode) {
+                case TINYWS_TEXT:
+                    CHANGE_STATE(text_data);
+                case TINYWS_BINARY:
+                    CHANGE_STATE(binary_data);
                 case TINYWS_CLOSE:
                     CALLBACK(close);
-                    break;
+                    CHANGE_STATE(close_data);
                 case TINYWS_PING:
                     CALLBACK(ping);
-                    break;
+                    CHANGE_STATE(ping_data);
                 case TINYWS_PONG:
                     CALLBACK(pong);
-                    break;
-                default:
-                    break;
+                    CHANGE_STATE(pong_data);
                 }
             }
 
@@ -591,6 +600,19 @@ size_t tinyws_execute(tinyws* parser, const tinyws_settings* settings, const cha
                 unsigned long long const remaining_bytes = parser->payload_length - parser->nread;
                 unsigned long long const bytes_to_process = remaining_bytes < len ? remaining_bytes : len;
                 CALLBACK_DATA(payload, data, bytes_to_process);
+                switch (parser->opcode) {
+                case TINYWS_CLOSE:
+                    CALLBACK_DATA(close_data, data, bytes_to_process);
+                    break;
+                case TINYWS_PING:
+                    CALLBACK_DATA(ping_data, data, bytes_to_process);
+                    break;
+                case TINYWS_PONG:
+                    CALLBACK_DATA(pong_data, data, bytes_to_process);
+                    break;
+                default:
+                    break;
+                }
                 parser->nread += bytes_to_process;
                 if (parser->payload_length == parser->nread)
                     CHANGE_STATE(initial);
